@@ -64,6 +64,18 @@ Alternatively to give it a test run, run the command:
 [top](#contents)
 ****
 
+### Swift Package Manager
+Use Swift Package Manager support in Xcode 11 (File > Swift Packages > Add Package Dependency...) to add the Swift package to your targets. Or add Tracery to your Package.swift file with the following:
+
+```swift
+.package(url: "https://github.com/BenziAhamed/Tracery.git", from: "0.0.2")
+```
+
+Then, add Tracery as a dependency to your target(s):
+```swift
+.target(name: "App", dependencies: [..., "Tracery"])
+```
+
 ## Basic usage
  
 
