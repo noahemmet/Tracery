@@ -122,18 +122,28 @@ public class Tracery {
         ruleSet[rule]?.selector = selector
     }
     
-    public func expand(_ input: String, maintainContext: Bool = false) -> String {
+    public func trace(_ input: String, maintainContext: Bool = false) -> [TraceSegment] {
         do {
             if !maintainContext {
                 ruleEvaluationLevel = 0
                 runTimeRuleSet.removeAll()
                 tagStorage.removeAll()
             }
-            return try eval(input)
+            return try evalSegments(input)
         }
         catch {
-            return "error: \(error)"
+            return [.text("error: \(error)")]
         }
+    }
+    
+    public func expand(_ input: String, maintainContext: Bool = false) -> String {
+        let segments = self.expandSegments(input, maintainContext: maintainContext)
+        return segments.flattened
+    }
+    
+    public func expandSegments(_ input: String, maintainContext: Bool = false) -> [TraceSegment] {
+        let segments = self.trace(input, maintainContext: maintainContext)
+        return segments
     }
     
     public static var maxStackDepth = 256

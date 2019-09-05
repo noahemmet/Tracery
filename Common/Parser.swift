@@ -63,6 +63,7 @@ enum ParserNode : CustomStringConvertible {
     // input nodes
     
     case text(String)
+    case object(name: String, result: String)
     case rule(name:String, mods:[Modifier])
     case any(values:[ValueCandidate], selector:RuleCandidateSelector, mods:[Modifier])
     case tag(name:String, values:[ValueCandidate])
@@ -108,6 +109,9 @@ enum ParserNode : CustomStringConvertible {
             
         case let .text(text):
             return "TXT_\(text)"
+            
+        case let .object(name, result):
+            return "OBJ_\(name)=\(result)"
             
         case let .any(values, _, mods):
             if mods.count > 0 {
