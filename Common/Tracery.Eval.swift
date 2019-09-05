@@ -13,7 +13,7 @@ extension Tracery {
     
     // transforms input text to expanded text
     // based on the rule set, run time tags, and modifiers
-    func evalSegments(_ text: String) throws -> [TraceSegment] {
+    func evalSegments(_ text: String) throws -> [Trace.Segment] {
         trace("📘 input \(text)")
         
         // let nodes = try Parser.gen(Lexer.tokens(text))
@@ -26,7 +26,7 @@ extension Tracery {
     }
     
     
-    fileprivate func eval(_ nodes: [ParserNode]) throws -> [TraceSegment] {
+    fileprivate func eval(_ nodes: [ParserNode]) throws -> [Trace.Segment] {
         
         // the execution stack
         // var stack = [ExecutionContext]()
@@ -127,10 +127,10 @@ extension Tracery {
             case let .text(text):
                 trace("📘 text '\(text)'")
                 // commit result to context
-                contextStack.contexts[top].segments.append(.text(text))
+                contextStack.contexts[top].trace.segments.append(.text(text))
                 
             case let .object(name, result):
-                contextStack.contexts[top].segments.append(.object(name: name, result: result))
+                contextStack.contexts[top].trace.segments.append(.object(name: name, result: result))
                 
             case let .evaluateArg(nodes):
                 // special node that evaluates
@@ -246,8 +246,8 @@ extension Tracery {
             case let .runMod(name):
                 guard let mod = mods[name] else { break }
                 let context = contextStack.contexts[top]
-                trace("🔰 run mod \(name)(\(context.segments.flattened) params: \(context.args.joined(separator: ",")))")
-                contextStack.contexts[top].segments = [.text(mod(context.segments.flattened, context.args))]
+                trace("🔰 run mod \(name)(\(context.trace.flattened) params: \(context.args.joined(separator: ",")))")
+                contextStack.contexts[top].trace = Trace([.text(mod(context.trace.flattened, context.args))])
                 
             case let .createRule(name, values):
                 let mapping = RuleMapping(
@@ -308,14 +308,14 @@ extension Tracery {
                     try applyMods(nodes: nodes, mods: mods)
                 case .noExpansion(let reason):
                     warn("rule '\(name)' expansion failed - \(reason)")
-                    contextStack.contexts[top].segments.append(.text("{\(name)}"))
+                    contextStack.contexts[top].trace.segments.append(.text("{\(name)}"))
                 }
             }
         }
         
         // finally pop the last
         // context and
-        return popContext().segments
+        return popContext().trace.segments
     }
     
     
@@ -355,25 +355,6 @@ extension Tracery {
     }
 }
 
-/// Represents either text or an object. Can be flattened into a single string using `[TextSegment].flattened`.
-public enum TraceSegment: Hashable {
-    case text(String)
-    case object(name: String, result: String)
-}
-
-extension Collection where Element == TraceSegment {
-    public var flattened: String {
-        return self.reduce("") { result, segment in
-            switch segment {
-            case .object(_, let objectResult):
-                return result + objectResult
-            case .text(let text):
-                return result + text
-            }
-        }
-    }
-}
-
 struct ExecutionContext {
     
     // Identifies what should happen
@@ -387,7 +368,7 @@ struct ExecutionContext {
     
     // The accumulated result of
     // this context, if any
-    var segments: [TraceSegment]
+    var trace: Trace
     
     // The args that were created
     // during context evaluation
@@ -411,7 +392,7 @@ struct ExecutionContext {
         // store in reversed order
         // to allow stack operation
         self.nodes = nodes.reversed()
-        self.segments = []
+        self.trace = Trace([])
         self.args = []
         self.popAction = popAction
         self.affectsEvaluationLevel = affectsEvaluationLevel
@@ -433,7 +414,7 @@ struct ExecutionContext {
 
 extension ExecutionContext : CustomStringConvertible {
     var description: String {
-        return "\(nodes) \(popAction) args\(args) result:\(segments.flattened)"
+        return "\(nodes) \(popAction) args\(args) result:\(trace.flattened)"
     }
 }
 
@@ -472,7 +453,7 @@ struct ContextStack {
         }
         contexts[top].affectsEvaluationLevel = affectsEvaluationLevel
         contexts[top].popAction = popAction
-        contexts[top].segments = []
+        contexts[top].trace = Trace([])
         
         top += 1
     }
@@ -490,9 +471,9 @@ struct ContextStack {
         
         switch context.popAction {
         case .appendToResult:
-            contexts[top-1].segments.append(contentsOf: context.segments)
+            contexts[top-1].trace.segments.append(contentsOf: context.trace.segments)
         case .addArg:
-            contexts[top-1].args.append(context.segments.flattened)
+            contexts[top-1].args.append(context.trace.flattened)
         case .nothing:
             break
         }

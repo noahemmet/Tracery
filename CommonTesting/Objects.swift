@@ -21,9 +21,9 @@ class Objects: XCTestCase {
     func testAllowAddingObjectsWithSegments() {
         let t = Tracery()
         t.add(object: "jack", named: "person")
-        let segments = t.expandSegments("hi my name is #person#, nice to meet you.")
-        XCTAssertEqual(segments, [.text("hi my name is "), .object(name: "person", result: "jack"), .text(", nice to meet you.")])
-        XCTAssertEqual(segments.flattened, "hi my name is jack, nice to meet you.")
+        let trace = t.expandSegments("hi my name is #person#, nice to meet you.")
+        XCTAssertEqual(trace.segments, [.text("hi my name is "), .object(name: "person", result: "jack"), .text(", nice to meet you.")])
+        XCTAssertEqual(trace.flattened, "hi my name is jack, nice to meet you.")
     }
     
     func testObjectsCanRunModifiers() {
