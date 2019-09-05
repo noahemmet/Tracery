@@ -7,9 +7,9 @@
 
 import Foundation
 
-public struct Trace: Hashable {
+public struct Trace: Hashable, Codable {
     public var segments: [Segment]
-
+    
     public init(_ segments: [Segment]) {
         self.segments = segments
     }
@@ -17,8 +17,8 @@ public struct Trace: Hashable {
     public var flattened: String {
         return segments.reduce("") { result, segment in
             switch segment {
-            case .object(_, let objectResult):
-                return result + objectResult
+            case .object(let object):
+                return result + object.result
             case .text(let text):
                 return result + text
             }
@@ -30,6 +30,47 @@ extension Trace {
     /// Represents either text or an object. Can be flattened into a single string using `[TextSegment].flattened`.
     public enum Segment: Hashable {
         case text(String)
-        case object(name: String, result: String)
+        case object(Object)
+    }
+}
+
+extension Trace.Segment: Codable {
+    enum CodingKeys: String, CodingKey, Codable {
+        case _kind
+        case text
+        case object
+        
+        init(_ segment: Trace.Segment) {
+            switch segment {
+            case .text: self = .text
+            case .object: self = .object
+            }
+        }
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let kind: CodingKeys = try container.decode(CodingKeys.self, forKey: ._kind)
+        switch kind {
+        case ._kind:
+            throw ParserError.error("__kind should never be encoded for \(type(of: self))")
+        case .text:
+            let text = try container.decode(String.self, forKey: .text)
+            self = .text(text)
+        case .object:
+            let object = try container.decode(Object.self, forKey: .object)
+            self = .object(object)
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(CodingKeys(self), forKey: ._kind)
+        switch self {
+        case .text(let text):
+            try container.encode(text, forKey: .text)
+        case .object(let object):
+            try container.encode(object, forKey: .object)
+        }
     }
 }

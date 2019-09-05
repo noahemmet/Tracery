@@ -129,8 +129,8 @@ extension Tracery {
                 // commit result to context
                 contextStack.contexts[top].trace.segments.append(.text(text))
                 
-            case let .object(name, result):
-                contextStack.contexts[top].trace.segments.append(.object(name: name, result: result))
+            case let .object(object):
+                contextStack.contexts[top].trace.segments.append(.object(object))
                 
             case let .evaluateArg(nodes):
                 // special node that evaluates
@@ -294,7 +294,7 @@ extension Tracery {
                 else if let object = objects[name] {
                     let value = "\(object)"
                     trace("📘 eval object \(value)")
-                    state = .apply([.object(name: name, result: value)])
+                    state = .apply([.object(Object(name: name, result: value))])
                 }
                 else if let mapping = runTimeRuleSet[name] {
                     selectCandidate(mapping, runTime: true)
