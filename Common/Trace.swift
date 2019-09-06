@@ -10,6 +10,10 @@ import Foundation
 public struct Trace: Hashable, Codable {
     public var segments: [Segment]
     
+    public init(text: String) {
+        self.segments = [.text(text)]
+    }
+    
     public init(_ segments: [Segment]) {
         self.segments = segments
     }
@@ -25,6 +29,14 @@ public struct Trace: Hashable, Codable {
         }
     }
 }
+
+extension Trace: ExpressibleByStringLiteral {
+    public init(stringLiteral: String) {
+        self.init(text: stringLiteral)
+    }
+}
+
+// MARK: Trace.Segment
 
 extension Trace {
     /// Represents either text or an object. Can be flattened into a single string using `[TextSegment].flattened`.
