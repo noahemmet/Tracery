@@ -129,7 +129,7 @@ public class Tracery {
                 runTimeRuleSet.removeAll()
                 tagStorage.removeAll()
             }
-            return Trace(try evalSegments(input))
+            return try evalSegments(input)
         }
         catch {
             return Trace([.text("error: \(error)")])

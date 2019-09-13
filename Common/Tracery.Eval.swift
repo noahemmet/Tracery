@@ -13,7 +13,7 @@ extension Tracery {
     
     // transforms input text to expanded text
     // based on the rule set, run time tags, and modifiers
-    func evalSegments(_ text: String) throws -> [Trace.Segment] {
+    func evalSegments(_ text: String) throws -> Trace {
         trace("📘 input \(text)")
         
         // let nodes = try Parser.gen(Lexer.tokens(text))
@@ -26,7 +26,7 @@ extension Tracery {
     }
     
     
-    fileprivate func eval(_ nodes: [ParserNode]) throws -> [Trace.Segment] {
+    fileprivate func eval(_ nodes: [ParserNode]) throws -> Trace {
         
         // the execution stack
         // var stack = [ExecutionContext]()
@@ -265,12 +265,12 @@ extension Tracery {
                 
                 
             case let .rule(name, mods):
-
+                
                 enum ExpansionState {
-                    case apply([ParserNode])
+                    case apply(value: String?, nodes: [ParserNode])
                     case noExpansion(reason: String)
                 }
-
+                
                 var state: ExpansionState = .noExpansion(reason: "not defined")
                 
                 func selectCandidate(_ mapping: RuleMapping, runTime: Bool) {
@@ -278,23 +278,23 @@ extension Tracery {
                         state = .noExpansion(reason: "no candidates found")
                         return
                     }
-                    state = .apply(candidate.value.nodes)
+                    state = .apply(value: candidate.text, nodes: candidate.value.nodes)
                     trace("📙 eval \(runTime ? "runtime" : "") \(node)")
                 }
                 
                 if name.isEmpty {
-                    state = .apply([.text("")])
+                    state = .apply(value: "", nodes: [.text("")])
                 }
                 else if let mapping = tagStorage.get(name: name) {
                     let i = mapping.selector.pick(count: mapping.candidates.count)
                     let value = mapping.candidates[i]
                     trace("📗 get tag[\(name)] --> \(value)")
-                    state = .apply([.text(value)])
+                    state = .apply(value: value, nodes: [.text(value)])
                 }
                 else if let object = objects[name] {
                     let value = "\(object)"
                     trace("📘 eval object \(value)")
-                    state = .apply([.object(Object(name: name, result: value))])
+                    state = .apply(value: nil, nodes: [.object(Object(name: name, result: value))])
                 }
                 else if let mapping = runTimeRuleSet[name] {
                     selectCandidate(mapping, runTime: true)
@@ -304,8 +304,9 @@ extension Tracery {
                 }
                 
                 switch state {
-                case .apply(let nodes):
+                case .apply(let value, let nodes):
                     try applyMods(nodes: nodes, mods: mods)
+                    contextStack.contexts[top].trace.rules[name] = value
                 case .noExpansion(let reason):
                     warn("rule '\(name)' expansion failed - \(reason)")
                     contextStack.contexts[top].trace.segments.append(.text("{\(name)}"))
@@ -315,7 +316,7 @@ extension Tracery {
         
         // finally pop the last
         // context and
-        return popContext().trace.segments
+        return popContext().trace
     }
     
     

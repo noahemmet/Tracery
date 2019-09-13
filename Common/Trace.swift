@@ -7,17 +7,19 @@
 
 import Foundation
 
+/// An evaluated grammar.
 public struct Trace: Hashable, Codable {
+    /// The text and objects that make up this Trace.
     public var segments: [Segment]
+    /// The evaluated rules.
+    public var rules: [String: String]
     
-    public init(text: String) {
-        self.segments = [.text(text)]
-    }
-    
-    public init(_ segments: [Segment]) {
+    public init(_ segments: [Segment], rules: [String: String] = [:]) {
         self.segments = segments
+        self.rules = rules
     }
     
+    /// The text representation of the Trace.
     public var flattened: String {
         return segments.reduce("") { result, segment in
             switch segment {
@@ -30,11 +32,11 @@ public struct Trace: Hashable, Codable {
     }
 }
 
-extension Trace: ExpressibleByStringLiteral {
-    public init(stringLiteral: String) {
-        self.init(text: stringLiteral)
-    }
-}
+//extension Trace: ExpressibleByStringLiteral {
+//    public init(stringLiteral: String) {
+//        self.init(text: stringLiteral)
+//    }
+//}
 
 // MARK: Trace.Segment
 
